@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Subscription Graveyard — Find & Kill Your Forgotten Subscriptions</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d0d0d;
+      --surface: #141414;
+      --bone: #e8e0d0;
+      --bone-dim: #a89e8e;
+      --moss: #4a6741;
+      --moss-light: #6a8f60;
+      --rust: #c0522a;
+      --rust-light: #e06030;
+      --stone: #2a2a2a;
+      --epitaph: #1a1a1a;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--bone);
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 300;
+      overflow-x: hidden;
+    }
+
+    /* ── Noise overlay ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 999;
+      opacity: .5;
+    }
+
+    /* ── Nav ── */
+    nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.5rem 4rem;
+      border-bottom: 1px solid #222;
+      position: sticky;
+      top: 0;
+      background: rgba(13,13,13,.92);
+      backdrop-filter: blur(12px);
+      z-index: 100;
+    }
+    .logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.1rem;
+      letter-spacing: .02em;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+    }
+    .logo-skull { font-size: 1.3rem; }
+    .nav-cta {
+      font-family: 'DM Mono', monospace;
+      font-size: .75rem;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--bone);
+      border: 1px solid #333;
+      padding: .55rem 1.2rem;
+      cursor: pointer;
+      background: transparent;
+      transition: all .2s;
+    }
+    .nav-cta:hover { background: var(--bone); color: var(--bg); border-color: var(--bone); }
+
+    /* ── Hero ── */
+    .hero {
+      min-height: 92vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 6rem 4rem 4rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Floating graves background */
+    .graves-bg {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+    .grave {
+      position: absolute;
+      bottom: -20px;
+      opacity: 0;
+      animation: riseGrave 1.2s forwards ease-out;
+    }
+    .grave svg { display: block; }
+
+    @keyframes riseGrave {
+      from { transform: translateY(60px); opacity: 0; }
+      to   { transform: translateY(0);   opacity: 1; }
+    }
+
+    .hero-eyebrow {
+      font-family: 'DM Mono', monospace;
+      font-size: .72rem;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: var(--moss-light);
+      margin-bottom: 1.5rem;
+      opacity: 0;
+      animation: fadeUp .6s .2s forwards;
+    }
+
+    h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(3.2rem, 8vw, 7rem);
+      font-weight: 900;
+      line-height: 1.0;
+      letter-spacing: -.02em;
+      max-width: 800px;
+      opacity: 0;
+      animation: fadeUp .7s .35s forwards;
+    }
+    h1 em {
+      font-style: italic;
+      color: var(--rust-light);
+    }
+
+    .hero-sub {
+      margin-top: 2rem;
+      font-size: 1.15rem;
+      font-weight: 300;
+      color: var(--bone-dim);
+      max-width: 500px;
+      line-height: 1.7;
+      opacity: 0;
+      animation: fadeUp .7s .5s forwards;
+    }
+
+    /* Email form */
+    .signup-form {
+      margin-top: 3rem;
+      display: flex;
+      gap: .75rem;
+      flex-wrap: wrap;
+      opacity: 0;
+      animation: fadeUp .7s .65s forwards;
+    }
+    .signup-form input {
+      flex: 1;
+      min-width: 260px;
+      background: var(--stone);
+      border: 1px solid #333;
+      color: var(--bone);
+      font-family: 'DM Sans', sans-serif;
+      font-size: .95rem;
+      padding: .9rem 1.2rem;
+      outline: none;
+      transition: border-color .2s;
+    }
+    .signup-form input::placeholder { color: #555; }
+    .signup-form input:focus { border-color: var(--moss-light); }
+    .signup-form button {
+      background: var(--rust);
+      color: var(--bone);
+      border: none;
+      font-family: 'DM Mono', monospace;
+      font-size: .78rem;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      padding: .9rem 2rem;
+      cursor: pointer;
+      transition: background .2s, transform .1s;
+    }
+    .signup-form button:hover { background: var(--rust-light); transform: translateY(-1px); }
+    .signup-form button:active { transform: translateY(0); }
+
+    .hero-note {
+      margin-top: 1rem;
+      font-size: .78rem;
+      color: #555;
+      font-family: 'DM Mono', monospace;
+      opacity: 0;
+      animation: fadeUp .6s .8s forwards;
+    }
+
+    /* ── Stats strip ── */
+    .stats {
+      display: flex;
+      gap: 0;
+      border-top: 1px solid #1e1e1e;
+      border-bottom: 1px solid #1e1e1e;
+      overflow: hidden;
+    }
+    .stat {
+      flex: 1;
+      padding: 2.5rem 3rem;
+      border-right: 1px solid #1e1e1e;
+      opacity: 0;
+      animation: fadeUp .6s forwards;
+    }
+    .stat:last-child { border-right: none; }
+    .stat:nth-child(1) { animation-delay: .1s; }
+    .stat:nth-child(2) { animation-delay: .2s; }
+    .stat:nth-child(3) { animation-delay: .3s; }
+    .stat-num {
+      font-family: 'Playfair Display', serif;
+      font-size: 2.8rem;
+      font-weight: 900;
+      color: var(--bone);
+      line-height: 1;
+    }
+    .stat-num span { color: var(--rust-light); }
+    .stat-label {
+      margin-top: .4rem;
+      font-size: .82rem;
+      color: var(--bone-dim);
+      font-weight: 400;
+    }
+
+    /* ── How it works ── */
+    .section {
+      padding: 7rem 4rem;
+    }
+    .section-label {
+      font-family: 'DM Mono', monospace;
+      font-size: .7rem;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: var(--moss-light);
+      margin-bottom: 3rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .section-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #222;
+      max-width: 200px;
+    }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 2px;
+    }
+    .step {
+      background: var(--surface);
+      padding: 2.5rem 2rem;
+      position: relative;
+      overflow: hidden;
+      transition: background .2s;
+    }
+    .step:hover { background: #1a1a1a; }
+    .step::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--moss);
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform .3s;
+    }
+    .step:hover::before { transform: scaleX(1); }
+    .step-num {
+      font-family: 'DM Mono', monospace;
+      font-size: .7rem;
+      color: #444;
+      letter-spacing: .1em;
+      margin-bottom: 1.5rem;
+    }
+    .step-icon { font-size: 1.8rem; margin-bottom: 1rem; }
+    .step h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.3rem;
+      font-weight: 700;
+      margin-bottom: .75rem;
+      line-height: 1.2;
+    }
+    .step p {
+      font-size: .9rem;
+      color: var(--bone-dim);
+      line-height: 1.7;
+    }
+
+    /* ── Tombstone showcase ── */
+    .showcase {
+      background: var(--epitaph);
+      padding: 5rem 4rem;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    .tombstones {
+      display: flex;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+      margin-top: 3rem;
+    }
+    .tombstone {
+      background: var(--stone);
+      border: 1px solid #2a2a2a;
+      padding: 1.5rem 1.8rem;
+      min-width: 180px;
+      position: relative;
+      transition: transform .2s, border-color .2s;
+      cursor: default;
+    }
+    .tombstone:hover { transform: translateY(-4px); border-color: #444; }
+    .tombstone::before {
+      content: '✝';
+      position: absolute;
+      top: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--stone);
+      padding: 0 6px;
+      font-size: .9rem;
+      color: #444;
+    }
+    .tombstone-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--bone-dim);
+      margin-bottom: .3rem;
+    }
+    .tombstone-rip {
+      font-family: 'DM Mono', monospace;
+      font-size: .65rem;
+      color: #444;
+      letter-spacing: .05em;
+      margin-bottom: .75rem;
+    }
+    .tombstone-cost {
+      font-family: 'DM Mono', monospace;
+      font-size: 1.1rem;
+      color: var(--rust-light);
+      font-weight: 500;
+    }
+    .tombstone-period {
+      font-size: .7rem;
+      color: #555;
+    }
+
+    /* ── Pricing ── */
+    .pricing-card {
+      background: var(--surface);
+      border: 1px solid #2a2a2a;
+      max-width: 420px;
+      padding: 3rem;
+      margin-top: 3rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .pricing-card::after {
+      content: '💀';
+      position: absolute;
+      bottom: -20px;
+      right: -10px;
+      font-size: 8rem;
+      opacity: .04;
+      pointer-events: none;
+    }
+    .price {
+      font-family: 'Playfair Display', serif;
+      font-size: 4rem;
+      font-weight: 900;
+      line-height: 1;
+      margin: 1rem 0;
+    }
+    .price sup { font-size: 1.5rem; vertical-align: super; }
+    .price-note {
+      font-family: 'DM Mono', monospace;
+      font-size: .72rem;
+      color: var(--moss-light);
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      margin-bottom: 2rem;
+    }
+    .price-features {
+      list-style: none;
+      margin-bottom: 2.5rem;
+    }
+    .price-features li {
+      padding: .6rem 0;
+      border-bottom: 1px solid #1e1e1e;
+      font-size: .9rem;
+      color: var(--bone-dim);
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+    }
+    .price-features li::before { content: '—'; color: var(--moss-light); font-size: .8rem; }
+    .cta-btn {
+      display: inline-block;
+      width: 100%;
+      background: var(--rust);
+      color: var(--bone);
+      border: none;
+      font-family: 'DM Mono', monospace;
+      font-size: .8rem;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      padding: 1rem 2rem;
+      cursor: pointer;
+      text-align: center;
+      transition: background .2s, transform .1s;
+    }
+    .cta-btn:hover { background: var(--rust-light); transform: translateY(-1px); }
+
+    /* ── Footer ── */
+    footer {
+      padding: 3rem 4rem;
+      border-top: 1px solid #1a1a1a;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: gap;
+      color: #444;
+      font-size: .8rem;
+      font-family: 'DM Mono', monospace;
+    }
+
+    /* ── Animations ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Mobile ── */
+    @media (max-width: 700px) {
+      nav, .hero, .section, .showcase, .pricing-card { padding-left: 1.5rem; padding-right: 1.5rem; }
+      .stats { flex-direction: column; }
+      .stat { border-right: none; border-bottom: 1px solid #1e1e1e; }
+      footer { flex-direction: column; gap: 1rem; text-align: center; }
+    }
+
+    /* success state */
+    .success-msg {
+      display: none;
+      font-family: 'DM Mono', monospace;
+      font-size: .82rem;
+      color: var(--moss-light);
+      margin-top: .75rem;
+      letter-spacing: .05em;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav>
+  <div class="logo">
+    <span class="logo-skull">💀</span>
+    Subscription Graveyard
+  </div>
+  <button class="nav-cta" onclick="document.getElementById('signup').focus()">Get Early Access</button>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="graves-bg" id="gravesBg"></div>
+
+  <p class="hero-eyebrow">Free early access · No credit card needed</p>
+
+  <h1>Your forgotten<br/>subscriptions<br/><em>are bleeding</em><br/>you dry.</h1>
+
+  <p class="hero-sub">
+    Connect your Gmail in 30 seconds. We scan for every subscription you're paying for — even the ones you forgot existed — and show you exactly how much they're costing you.
+  </p>
+
+  <div class="signup-form">
+    <input type="email" id="signup" placeholder="your@email.com" autocomplete="email"/>
+    <button onclick="handleSignup()">Join the Waitlist →</button>
+  </div>
+  <p class="hero-note">No spam. Just a ping when we launch.</p>
+  <p class="success-msg" id="successMsg">✓ You're on the list. We'll be in touch.</p>
+</section>
+
+<!-- Stats -->
+<div class="stats">
+  <div class="stat">
+    <div class="stat-num"><span>$</span>329</div>
+    <div class="stat-label">Average monthly spend on forgotten subscriptions</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num">4.2<span>×</span></div>
+    <div class="stat-label">More subscriptions than people think they have</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num"><span>~</span>30<span>s</span></div>
+    <div class="stat-label">To connect your inbox and see the damage</div>
+  </div>
+</div>
+
+<!-- How it works -->
+<section class="section">
+  <div class="section-label">How it works</div>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">01</div>
+      <div class="step-icon">📬</div>
+      <h3>Connect your Gmail</h3>
+      <p>One click OAuth — we never store your emails, we just scan for billing receipts.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">02</div>
+      <div class="step-icon">🔍</div>
+      <h3>We find everything</h3>
+      <p>Every Netflix, Spotify, SaaS tool, gym membership, and "free trial" that went rogue.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">03</div>
+      <div class="step-icon">💀</div>
+      <h3>See your graveyard</h3>
+      <p>A clear dashboard showing what you pay, how often, and what it costs per year.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">04</div>
+      <div class="step-icon">⚰️</div>
+      <h3>Kill what you don't need</h3>
+      <p>One-click links to cancel each subscription. No more hunting through settings.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Tombstone showcase -->
+<section class="showcase">
+  <div class="section-label">What we typically find</div>
+  <div class="tombstones" id="tombstoneGrid">
+    <div class="tombstone">
+      <div class="tombstone-name">Netflix</div>
+      <div class="tombstone-rip">R.I.P. your money</div>
+      <div class="tombstone-cost">$22.99</div>
+      <div class="tombstone-period">/month · $275/yr</div>
+    </div>
+    <div class="tombstone">
+      <div class="tombstone-name">Spotify</div>
+      <div class="tombstone-rip">forgotten since 2021</div>
+      <div class="tombstone-cost">$10.99</div>
+      <div class="tombstone-period">/month · $131/yr</div>
+    </div>
+    <div class="tombstone">
+      <div class="tombstone-name">Adobe CC</div>
+      <div class="tombstone-rip">used once in March</div>
+      <div class="tombstone-cost">$54.99</div>
+      <div class="tombstone-period">/month · $659/yr</div>
+    </div>
+    <div class="tombstone">
+      <div class="tombstone-name">Hulu</div>
+      <div class="tombstone-rip">the other streaming one</div>
+      <div class="tombstone-cost">$17.99</div>
+      <div class="tombstone-period">/month · $215/yr</div>
+    </div>
+    <div class="tombstone">
+      <div class="tombstone-name">Duolingo Plus</div>
+      <div class="tombstone-rip">¿cómo se dice... cancel?</div>
+      <div class="tombstone-cost">$6.99</div>
+      <div class="tombstone-period">/month · $83/yr</div>
+    </div>
+    <div class="tombstone">
+      <div class="tombstone-name">Some SaaS</div>
+      <div class="tombstone-rip">you have no idea what this is</div>
+      <div class="tombstone-cost">$29.00</div>
+      <div class="tombstone-period">/month · $348/yr</div>
+    </div>
+  </div>
+</section>
+
+<!-- Pricing -->
+<section class="section">
+  <div class="section-label">Pricing</div>
+  <div class="pricing-card">
+    <p style="font-family:'DM Mono',monospace;font-size:.7rem;color:#555;letter-spacing:.1em;text-transform:uppercase;">One-time · No subscription (obviously)</p>
+    <div class="price"><sup>$</sup>9</div>
+    <p class="price-note">Pay once. Yours forever.</p>
+    <ul class="price-features">
+      <li>Full inbox scan — finds everything</li>
+      <li>Complete subscription dashboard</li>
+      <li>Yearly cost breakdown</li>
+      <li>One-click cancel links</li>
+      <li>Monthly monitoring alerts</li>
+      <li>Works with Gmail & Outlook</li>
+    </ul>
+    <button class="cta-btn" onclick="document.getElementById('signup').focus(); document.getElementById('signup').scrollIntoView({behavior:'smooth'})">Join Waitlist — Launching Soon</button>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer>
+  <div>💀 Subscription Graveyard</div>
+  <div>Built by one person who was tired of getting bled dry.</div>
+  <div>© 2025</div>
+</footer>
+
+<script>
+  // Animated graves in hero background
+  const gravesBg = document.getElementById('gravesBg');
+  const graveData = [
+    { x: 5,  size: 60,  delay: 0.1 },
+    { x: 15, size: 80,  delay: 0.4 },
+    { x: 28, size: 55,  delay: 0.2 },
+    { x: 40, size: 90,  delay: 0.6 },
+    { x: 55, size: 65,  delay: 0.3 },
+    { x: 68, size: 75,  delay: 0.5 },
+    { x: 78, size: 50,  delay: 0.15 },
+    { x: 88, size: 85,  delay: 0.45 },
+    { x: 95, size: 60,  delay: 0.25 },
+  ];
+
+  graveData.forEach(g => {
+    const el = document.createElement('div');
+    el.className = 'grave';
+    el.style.left = g.x + '%';
+    el.style.animationDelay = g.delay + 's';
+    el.style.opacity = '0';
+    const h = g.size;
+    const w = h * 0.65;
+    const col = `rgba(30,30,30,${0.4 + Math.random() * 0.3})`;
+    el.innerHTML = `
+      <svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="0" y="${h*0.3}" width="${w}" height="${h*0.7}" rx="2" fill="${col}"/>
+        <ellipse cx="${w/2}" cy="${h*0.3}" rx="${w/2}" ry="${h*0.2}" fill="${col}"/>
+        <line x1="${w/2}" y1="${h*0.08}" x2="${w/2}" y2="${h*0.52}" stroke="rgba(255,255,255,0.04)" stroke-width="1.5"/>
+        <line x1="${w*0.3}" y1="${h*0.25}" x2="${w*0.7}" y2="${h*0.25}" stroke="rgba(255,255,255,0.04)" stroke-width="1.5"/>
+      </svg>`;
+    gravesBg.appendChild(el);
+  });
+
+  // Signup handler
+  function handleSignup() {
+    const input = document.getElementById('signup');
+    const msg = document.getElementById('successMsg');
+    const note = document.querySelector('.hero-note');
+    if (!input.value || !input.value.includes('@')) {
+      input.style.borderColor = '#c0522a';
+      setTimeout(() => input.style.borderColor = '#333', 1500);
+      return;
+    }
+    // In a real app, POST to your backend here
+    input.style.display = 'none';
+    document.querySelector('.signup-form button').style.display = 'none';
+    note.style.display = 'none';
+    msg.style.display = 'block';
+  }
+
+  // Enter key on input
+  document.getElementById('signup').addEventListener('keydown', e => {
+    if (e.key === 'Enter') handleSignup();
+  });
+</script>
+</body>
+</html>
