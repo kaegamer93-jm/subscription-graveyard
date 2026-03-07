@@ -658,30 +658,19 @@
 
     try {
       const email = input.value.trim();
-      const audienceId = '1cc8333763';
-      const apiKey = 'e9b103e0b16f176ac76fd18b4d9f209d-us5';
-      const dc = apiKey.split('-')[1]; // us5
 
-      const response = await fetch(`https://cors-anywhere.herokuapp.com/https://${dc}.api.mailchimp.com/3.0/lists/${audienceId}/members`, {
+      await fetch('/api/subscribe', {
         method: 'POST',
-        headers: {
-          'Authorization': `apikey ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email_address: email,
-          status: 'subscribed',
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
       });
 
-      // Show success regardless (Mailchimp may return 400 if already subscribed)
       input.style.display = 'none';
       btn.style.display = 'none';
       note.style.display = 'none';
       msg.style.display = 'block';
 
     } catch (err) {
-      // Still show success to user — email will be captured via fallback
       input.style.display = 'none';
       btn.style.display = 'none';
       note.style.display = 'none';
