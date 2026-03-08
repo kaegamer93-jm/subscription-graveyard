@@ -640,42 +640,14 @@
   });
 
   // Signup handler
-  async function handleSignup() {
+  function handleSignup() {
     const input = document.getElementById('signup');
-    const msg = document.getElementById('successMsg');
-    const note = document.querySelector('.hero-note');
-    const btn = document.querySelector('.signup-form button');
-
     if (!input.value || !input.value.includes('@')) {
       input.style.borderColor = '#c0522a';
       setTimeout(() => input.style.borderColor = '#333', 1500);
       return;
     }
-
-    // Show loading state
-    btn.textContent = 'Saving...';
-    btn.disabled = true;
-
-    try {
-      const email = input.value.trim();
-
-      await fetch('/api/subscribe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      });
-
-      input.style.display = 'none';
-      btn.style.display = 'none';
-      note.style.display = 'none';
-      msg.style.display = 'block';
-
-    } catch (err) {
-      input.style.display = 'none';
-      btn.style.display = 'none';
-      note.style.display = 'none';
-      msg.style.display = 'block';
-    }
+    window.open('https://forms.gle/nAWt8mMmWqMgAu1C9', '_blank');
   }
 
   // Enter key on input
